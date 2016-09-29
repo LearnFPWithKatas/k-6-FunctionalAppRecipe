@@ -1,3 +1,5 @@
 FSharp.Core
 FsCheck.Xunit
 FsUnit.xUnit
+Microsoft.AspNet.WebApi.OwinSelfHost
+NewtonSoft.Json

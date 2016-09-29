@@ -7,5 +7,7 @@ nuget FAKE
 
 nuget FsCheck.Xunit
 nuget FsUnit.xUnit
+nuget Microsoft.AspNet.WebApi.OwinSelfHost
+nuget NewtonSoft.Json
 nuget xunit.runner.console
 nuget xunit.runner.visualstudio
