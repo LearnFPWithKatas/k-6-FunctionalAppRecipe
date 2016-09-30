@@ -19,7 +19,7 @@ type Startup() =
     
     let configureDependencies() = 
         let dependencyResolver = new DependencyResolver()
-        let ctor() = new Controllers.CustomersController() :> obj
+        let ctor() = new Controllers.CustomersController(DataAccessLayer.CustomerDao()) :> obj
         dependencyResolver.RegisterType<Controllers.CustomersController> ctor
         config.DependencyResolver <- dependencyResolver
     

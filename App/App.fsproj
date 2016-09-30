@@ -53,6 +53,8 @@
     <Content Include="App.config" />
     <Content Include="paket.references" />
     <Compile Include="SqlDatabase.fs" />
+    <Compile Include="DomainModels.fs" />
+    <Compile Include="DataAccessLayer.fs" />
     <Compile Include="Dtos.fs" />
     <Compile Include="Controllers.fs" />
     <Compile Include="owin\DependencyResolver.fs" />
