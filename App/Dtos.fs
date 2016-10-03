@@ -8,11 +8,20 @@ type CustomerDto() =
 
 module DtoConverter = 
     open App.DomainModels
+    open System
     
     let dtoToCustomer (dto : CustomerDto) = 
-        if isNull dto then null
-        else Customer.Create(dto.Id, dto.FirstName, dto.LastName)
+        if isNull dto then raise <| ArgumentException(CustomerIsRequired.ToString())
+        else 
+            let id = createCustomerId dto.Id
+            let fName = createFirstName dto.FirstName
+            let lName = createLastName dto.LastName
+            let name = createPersonalName fName lName
+            createCustomer id name
     
     let customerToDto (cust : Customer) = 
-        if isNull cust then null
-        else CustomerDto(Id = cust.Id, FirstName = cust.FirstName, LastName = cust.LastName)
+        let dtoCust = CustomerDto()
+        dtoCust.Id <- cust.Id |> Primitives.CustomerId.apply id
+        dtoCust.FirstName <- cust.Name.FirstName |> Primitives.String10.apply id
+        dtoCust.LastName <- cust.Name.LastName |> Primitives.String10.apply id
+        dtoCust

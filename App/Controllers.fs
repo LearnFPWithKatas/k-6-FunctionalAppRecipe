@@ -1,6 +1,7 @@
 ﻿namespace App.Controllers
 
 open App.DataAccessLayer
+open App.DomainModels
 open App.Dtos
 open System.Net
 open System.Web.Http
@@ -25,6 +26,7 @@ type CustomersController(dao : ICustomerDao) as x =
     [<HttpGet>]
     member __.Get(id : int) : IHttpActionResult = 
         id
+        |> createCustomerId
         |> dao.GetById
         |> DtoConverter.customerToDto
         |> ok
