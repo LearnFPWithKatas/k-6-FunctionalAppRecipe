@@ -1,5 +1,6 @@
 ﻿namespace App.Controllers
 
+open App
 open App.DataAccessLayer
 open App.DomainModels
 open App.Dtos
@@ -14,6 +15,11 @@ type CustomersController(dao : ICustomerDao) as x =
         if content = box() then OkResult(x) :> IHttpActionResult
         else NegotiatedContentResult(HttpStatusCode.OK, content, x) :> IHttpActionResult
     
+    let toHttpResult = 
+        let msgToHttpRes msg : IHttpActionResult = 
+            upcast NegotiatedContentResult(HttpStatusCode.InternalServerError, msg, x)
+        Rop.valueOrDefault msgToHttpRes
+    
     [<Route("example")>]
     [<HttpGet>]
     member __.GetExample() : IHttpActionResult = 
@@ -25,16 +31,19 @@ type CustomersController(dao : ICustomerDao) as x =
     [<Route("customers/{id}")>]
     [<HttpGet>]
     member __.Get(id : int) : IHttpActionResult = 
-        id
-        |> createCustomerId
-        |> dao.GetById
-        |> DtoConverter.customerToDto
-        |> ok
+        Rop.succeed id
+        |> Rop.bind (createCustomerId >> Rop.succeed)
+        |> Rop.bind (dao.GetById >> Rop.succeed)
+        |> Rop.bind (DtoConverter.customerToDto >> Rop.succeed)
+        |> Rop.map ok
+        |> toHttpResult
     
     [<Route("customers/{id}")>]
     [<HttpPost>]
     member __.Post(id : int, [<FromBody>] dto : CustomerDto) : IHttpActionResult = 
         dto.Id <- id
-        let cust = DtoConverter.dtoToCustomer dto
-        dao.Upsert(cust)
-        ok()
+        Rop.succeed dto
+        |> Rop.bind (DtoConverter.dtoToCustomer >> Rop.succeed)
+        |> Rop.bind (dao.Upsert >> Rop.succeed)
+        |> Rop.map ok
+        |> toHttpResult

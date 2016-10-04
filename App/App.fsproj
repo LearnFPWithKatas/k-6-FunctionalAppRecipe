@@ -52,6 +52,7 @@
   <ItemGroup>
     <Content Include="App.config" />
     <Content Include="paket.references" />
+    <Compile Include="Rop.fs" />
     <Compile Include="SqlDatabase.fs" />
     <Compile Include="DomainModels.fs" />
     <Compile Include="DataAccessLayer.fs" />
