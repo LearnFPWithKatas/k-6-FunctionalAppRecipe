@@ -32,9 +32,9 @@ type CustomersController(dao : ICustomerDao) as x =
     [<HttpGet>]
     member __.Get(id : int) : IHttpActionResult = 
         Rop.succeed id
-        |> Rop.bind (createCustomerId >> Rop.succeed)
-        |> Rop.bind (dao.GetById >> Rop.succeed)
-        |> Rop.bind (DtoConverter.customerToDto >> Rop.succeed)
+        |> Rop.bind createCustomerId
+        |> Rop.bind dao.GetById
+        |> Rop.map DtoConverter.customerToDto
         |> Rop.map ok
         |> toHttpResult
     
@@ -43,7 +43,7 @@ type CustomersController(dao : ICustomerDao) as x =
     member __.Post(id : int, [<FromBody>] dto : CustomerDto) : IHttpActionResult = 
         dto.Id <- id
         Rop.succeed dto
-        |> Rop.bind (DtoConverter.dtoToCustomer >> Rop.succeed)
-        |> Rop.bind (dao.Upsert >> Rop.succeed)
+        |> Rop.bind DtoConverter.dtoToCustomer
+        |> Rop.bind dao.Upsert
         |> Rop.map ok
         |> toHttpResult

@@ -5,6 +5,7 @@ type Result<'TSuccess, 'TMessage> =
     | Failure of 'TMessage list
 
 let succeed x = Success(x, [])
+let fail msg = Failure [ msg ]
 
 let either fSuccess fFailure = 
     function 
@@ -27,13 +28,25 @@ let apply f result =
     | Failure errs, Success(_, msgs) | Success(_, msgs), Failure errs -> errs @ msgs |> Failure
     | Failure errs1, Failure errs2 -> errs1 @ errs2 |> Failure
 
+let (<*>) = apply
+
 let lift f result = 
     let f' = f |> succeed
     apply f' result
 
 let map = lift
+let (<!>) = lift
 
 let valueOrDefault f = 
     function 
     | Success(x, _) -> x
     | Failure errors -> f errors
+
+let mapMessages f result = 
+    match result with
+    | Success(x, msgs) -> 
+        let msgs' = List.map f msgs
+        Success(x, msgs')
+    | Failure errors -> 
+        let errors' = List.map f errors
+        Failure errors'

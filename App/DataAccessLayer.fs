@@ -2,23 +2,26 @@
 
 open App.DomainModels
 open App.DomainModels.Primitives
+open App.Rop
 open App.SqlDatabase
-open System
 
 type ICustomerDao = 
-    abstract GetById : CustomerId.T -> Customer
-    abstract Upsert : Customer -> unit
+    abstract GetById : CustomerId.T -> Result<Customer, DomainMessage>
+    abstract Upsert : Customer -> Result<unit, DomainMessage>
 
 type CustomerDao() = 
     
     let fromDbCustomer (cust : DbCustomer) = 
-        if isNull cust then raise <| ArgumentException(SqlCustomerIsInvalid.ToString())
+        if isNull cust then fail SqlCustomerIsInvalid
         else 
-            let id = createCustomerId cust.Id
-            let fName = createFirstName cust.FirstName
-            let lName = createLastName cust.LastName
-            let name = createPersonalName fName lName
-            createCustomer id name
+            let name = 
+                createPersonalName 
+                <!> (createFirstName cust.FirstName) 
+                <*> (createLastName cust.LastName)
+            
+            createCustomer 
+            <!> (createCustomerId cust.Id) 
+            <*> name
     
     let toDbCustomer (cust : Customer) = 
         let dbCust = DbCustomer()
@@ -31,19 +34,20 @@ type CustomerDao() =
         
         member __.GetById custId = 
             let custIdInt = custId |> CustomerId.apply id
-            
-            let cust = 
-                DbContext().Customers()
-                |> Seq.tryFind (fun c -> c.Id = custIdInt)
-                |> Option.map fromDbCustomer
-            match cust with
-            | Some cust -> cust
-            | None -> raise <| ArgumentException(CustomerNotFound.ToString())
+            DbContext().Customers()
+            |> Seq.tryFind (fun c -> c.Id = custIdInt)
+            |> Option.fold (fun _ -> fromDbCustomer) (fail CustomerNotFound)
         
-        member x.Upsert(customer : Customer) : unit = 
+        member x.Upsert(customer : Customer) = 
             let db = DbContext()
             let newDbCust = toDbCustomer customer
-            try 
-                let __ = (x :> ICustomerDao).GetById(customer.Id)
+            
+            let fSuccess _ = 
                 db.Update(newDbCust)
-            with _ -> db.Insert(newDbCust)
+                succeed()
+            
+            let fFailure _ = 
+                db.Insert(newDbCust)
+                succeed()
+            
+            (x :> ICustomerDao).GetById(customer.Id) |> either fSuccess fFailure

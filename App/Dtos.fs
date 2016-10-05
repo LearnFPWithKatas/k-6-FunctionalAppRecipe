@@ -8,16 +8,19 @@ type CustomerDto() =
 
 module DtoConverter = 
     open App.DomainModels
-    open System
+    open App.Rop
     
     let dtoToCustomer (dto : CustomerDto) = 
-        if isNull dto then raise <| ArgumentException(CustomerIsRequired.ToString())
+        if isNull dto then fail SqlCustomerIsInvalid
         else 
-            let id = createCustomerId dto.Id
-            let fName = createFirstName dto.FirstName
-            let lName = createLastName dto.LastName
-            let name = createPersonalName fName lName
-            createCustomer id name
+            let name = 
+                createPersonalName 
+                <!> (createFirstName dto.FirstName) 
+                <*> (createLastName dto.LastName)
+            
+            createCustomer 
+            <!> (createCustomerId dto.Id) 
+            <*> name
     
     let customerToDto (cust : Customer) = 
         let dtoCust = CustomerDto()
