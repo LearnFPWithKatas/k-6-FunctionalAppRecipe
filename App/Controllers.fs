@@ -8,6 +8,51 @@ open System.Net
 open System.Web.Http
 open System.Web.Http.Results
 
+module ResponseBuilder = 
+    type ResponseMessage = 
+        | NotFound
+        | BadRequest of string
+        | InternalServerError of string
+    
+    let classify = 
+        function 
+        | CustomerIsRequired 
+        | CustomerIdMustBePositive 
+        | FirstNameIsRequired 
+        | FirstNameMustNotBeMoreThan10Chars 
+        | LastNameIsRequired 
+        | LastNameMustNotBeMoreThan10Chars as msg -> 
+            BadRequest(sprintf "%A" msg)
+        
+        | CustomerNotFound -> NotFound
+        
+        | SqlCustomerIsInvalid 
+        | DatabaseTimeout 
+        | DatabaseError _ as msg -> 
+            InternalServerError(sprintf "%A" msg)
+    
+    let primaryResponse = 
+        List.map classify
+        >> List.sort
+        >> List.head
+    
+    let badRequestsToStr msgs = 
+        msgs
+        |> List.map classify
+        |> List.choose (function 
+               | BadRequest s -> Some s
+               | _ -> None)
+        |> List.map (sprintf "ValidationError: %s; ")
+        |> List.reduce (+)
+    
+    let toHttpResult (x : ApiController) msgs : IHttpActionResult = 
+        match primaryResponse msgs with
+        | NotFound -> upcast NotFoundResult(x)
+        | BadRequest _ -> 
+            let validationMsg = badRequestsToStr msgs
+            upcast NegotiatedContentResult(HttpStatusCode.BadRequest, validationMsg, x)
+        | InternalServerError msg -> upcast NegotiatedContentResult(HttpStatusCode.InternalServerError, msg, x)
+
 type CustomersController(dao : ICustomerDao) as x = 
     inherit ApiController()
     
@@ -16,9 +61,9 @@ type CustomersController(dao : ICustomerDao) as x =
         else NegotiatedContentResult(HttpStatusCode.OK, content, x) :> IHttpActionResult
     
     let toHttpResult = 
-        let msgToHttpRes msg : IHttpActionResult = 
-            upcast NegotiatedContentResult(HttpStatusCode.InternalServerError, msg, x)
-        Rop.valueOrDefault msgToHttpRes
+        x
+        |> ResponseBuilder.toHttpResult
+        |> Rop.valueOrDefault
     
     [<Route("example")>]
     [<HttpGet>]

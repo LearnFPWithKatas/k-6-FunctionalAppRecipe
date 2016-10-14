@@ -59,6 +59,20 @@ let ``POST and then GET - Update``() =
     } |> Async.StartAsTask
 
 [<Fact>]
+let ``POST with database error``() =
+    async {
+        use __ = WebApp.Start<Startup>("http://localhost:9001")
+        use client = new HttpClient(BaseAddress = Uri("http://localhost:9001"));
+
+        use content = new StringContent("{\"id\": 0, \"firstName\": \"Partho\", \"lastName\": \"Das\"}", Encoding.UTF8, "application/json");
+        let! response = client.PostAsync("customers/42", content) |> Async.AwaitTask
+        let! msg = response.Content.ReadAsStringAsync() |> Async.AwaitTask
+
+        response.ReasonPhrase |> should equal "Internal Server Error"
+        msg |> should equal "\"DatabaseTimeout\""
+    } |> Async.StartAsTask
+
+[<Fact>]
 let ``POST with invalid parameters``() =
     async {
         use __ = WebApp.Start<Startup>("http://localhost:9001")
@@ -68,7 +82,6 @@ let ``POST with invalid parameters``() =
         let! response = client.PostAsync("customers/0", content) |> Async.AwaitTask
         let! msg = response.Content.ReadAsStringAsync() |> Async.AwaitTask
 
-        response.ReasonPhrase |> should equal "Internal Server Error"
-        msg.Contains("\"FirstNameIsRequired\"") |> should equal true
-        msg.Contains("\"CustomerIdMustBePositive\"") |> should equal true
+        response.ReasonPhrase |> should equal "Bad Request"
+        msg |> should equal "\"ValidationError: CustomerIdMustBePositive; ValidationError: FirstNameIsRequired; \""
     } |> Async.StartAsTask

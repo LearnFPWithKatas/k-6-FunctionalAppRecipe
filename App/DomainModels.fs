@@ -52,6 +52,8 @@ type DomainMessage =
     | LastNameMustNotBeMoreThan10Chars
     | CustomerNotFound
     | SqlCustomerIsInvalid
+    | DatabaseTimeout
+    | DatabaseError of string
 
 let createCustomerId customerId = 
     let map = 
