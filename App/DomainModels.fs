@@ -50,6 +50,7 @@ type DomainMessage =
     | FirstNameMustNotBeMoreThan10Chars
     | LastNameIsRequired
     | LastNameMustNotBeMoreThan10Chars
+    | LastNameChanged of string * string
     | CustomerNotFound
     | SqlCustomerIsInvalid
     | DatabaseTimeout

@@ -50,9 +50,14 @@ type CustomerDao() =
                 let db = DbContext()
                 let newDbCust = toDbCustomer customer
                 
-                let fSuccess _ = 
+                let fSuccess (currentCust, _) = 
                     db.Update(newDbCust)
-                    succeed()
+                    let currentLN = currentCust.Name.LastName |> String10.apply id
+                    if newDbCust.LastName <> currentLN then
+                        let event = LastNameChanged (currentLN, newDbCust.LastName)
+                        succeedWithMsg () event 
+                    else 
+                        succeed ()
                 
                 let fFailure _ = 
                     db.Insert(newDbCust)
